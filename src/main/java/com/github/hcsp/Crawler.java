@@ -18,8 +18,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Crawler {
     public static final String USER_NAME = "root";
@@ -29,31 +27,26 @@ public class Crawler {
     public static void main(String[] args) throws IOException, SQLException {
         //建立数据库链接
         Connection connection = DriverManager.getConnection("jdbc:h2:file:/E:/Crawler/news", USER_NAME, PASSWORD);
-        while (true) {
-            //从数据库加载即将被处理的链接并返回
-            List<String> linkPool = loadUrlsFromDatabase(connection, "select links from LINKS_TO_BE_PROCESSED");
-            if (linkPool.isEmpty()) {
-                break;
+        String link;
+        //如果数据库里加载下一个链接，如果不是null就进行循环
+        while ((link = getNextLinkAndThenDelete(connection)) != null) {
+            //查询数据库，如果链接被处理过了，就继续下一条链接
+            if (linkIsProcessed(connection, link)) {
+                continue;
             }
-            //从数组列表的尾部拿数据最有效率，不用做元素移动
-            String link = linkPool.remove(linkPool.size() - 1);
-
-            //从池子中拿一个来处理，处理完后从数据库中删除
-            deleteUrlsFromDatabase(connection, link);
-
-            //查询数据库，如果链接没有被处理过，就处理它
-            if (!linkIsProcessed(connection, link)) {
-                //如果是我们感兴趣的链接，就继续
-                if (isInterestingPage(link)) {
-                    System.out.println(link);
-                    //解析url并拿到返回的页面DOM
-                    Document document = httpGetAndParseHtml(link);
-                    putAllUrlsFromPageIntoDatabase(connection, document);
-                    //如果是新闻链接，就存储到数据库
-                    storeIntoDatabaseIfItIsNewsPage(document);
-                    insertLinkIntoDatabase(connection, link, "insert into LINKS_ALREADY_PROCESSED (LINKS) values (?)");
-
-                }
+            //链接没有被处理过
+            //如果是我们感兴趣的链接，就继续处理
+            if (isInterestingPage(link)) {
+                //打印当前链接
+                System.out.println(link);
+                //解析url并拿到返回的页面DOM
+                Document document = httpGetAndParseHtml(link);
+                //把拿到的url插入数据库未处理的表中
+                putAllUrlsFromPageIntoDatabase(connection, document);
+                //如果是新闻链接，就存储到数据库
+                storeIntoDatabaseIfItIsNewsPage(document);
+                //把已经处理过的链接插入数据库处理完成的表中
+                insertLinkIntoDatabase(connection, link, "insert into LINKS_ALREADY_PROCESSED (LINKS) values (?)");
             }
         }
     }
@@ -98,16 +91,23 @@ public class Crawler {
         }
     }
 
-    private static List<String> loadUrlsFromDatabase(Connection connection, String sql) throws SQLException {
-        List<String> result = new ArrayList<>();
+    private static String getNextLink(Connection connection, String sql) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet resultSet = statement.executeQuery()) {
             //执行查询并拿到link结果集
             while (resultSet.next()) {
                 //获取第一列的link链接并加入链接池中
-                result.add(resultSet.getString(1));
+                return resultSet.getString(1);
             }
         }
-        return result;
+        return null;
+    }
+
+    private static String getNextLinkAndThenDelete(Connection connection) throws SQLException {
+        String link = getNextLink(connection, "select links from LINKS_TO_BE_PROCESSED limit 1");
+        if (link != null) {
+            deleteUrlsFromDatabase(connection, link);
+        }
+        return link;
     }
 
     private static void storeIntoDatabaseIfItIsNewsPage(Document document) {
