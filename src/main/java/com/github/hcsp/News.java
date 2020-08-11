@@ -1,14 +1,11 @@
 package com.github.hcsp;
 
-import java.util.Date;
 
 public class News {
     private Integer id;
     private String title;
     private String content;
     private String url;
-    private Date created_at;
-    private Date modified_at;
 
     public Integer getId() {
         return id;
@@ -42,19 +39,4 @@ public class News {
         this.url = url;
     }
 
-    public Date getCreated_at() {
-        return created_at;
-    }
-
-    public void setCreated_at(Date created_at) {
-        this.created_at = created_at;
-    }
-
-    public Date getModified_at() {
-        return modified_at;
-    }
-
-    public void setModified_at(Date modified_at) {
-        this.modified_at = modified_at;
-    }
 }
