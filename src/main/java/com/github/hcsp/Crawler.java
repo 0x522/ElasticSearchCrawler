@@ -18,6 +18,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.stream.Collectors;
 
 public class Crawler {
     public static final String USER_NAME = "root";
@@ -44,7 +45,7 @@ public class Crawler {
                 //把拿到的url插入数据库未处理的表中
                 putAllUrlsFromPageIntoDatabase(connection, document);
                 //如果是新闻链接，就存储到数据库
-                storeIntoDatabaseIfItIsNewsPage(document);
+                storeIntoDatabaseIfItIsNewsPage(connection, document, link);
                 //把已经处理过的链接插入数据库处理完成的表中
                 insertLinkIntoDatabase(connection, link, "insert into LINKS_ALREADY_PROCESSED (LINKS) values (?)");
             }
@@ -56,6 +57,12 @@ public class Crawler {
         Elements links = document.select("a");
         for (Element aTag : links) {
             String href = aTag.attr("href");
+            if (href.toLowerCase().startsWith("javascript")) {
+                continue;
+            }
+            if (href.startsWith("//")) {
+                href = "https:" + href;
+            }
             insertLinkIntoDatabase(connection, href, "insert into LINKS_TO_BE_PROCESSED (LINKS) values (?)");
         }
     }
@@ -110,12 +117,18 @@ public class Crawler {
         return link;
     }
 
-    private static void storeIntoDatabaseIfItIsNewsPage(Document document) {
+    private static void storeIntoDatabaseIfItIsNewsPage(Connection connection, Document document, String link) throws SQLException {
         Elements articleTags = document.select("article");
         if (!articleTags.isEmpty()) {
             for (Element articleTag : articleTags) {
                 String title = articleTag.child(0).text();
-                System.out.println(title);
+                String content = articleTag.select("p").stream().map(Element::text).collect(Collectors.joining("\n"));
+                try (PreparedStatement statement = connection.prepareStatement("insert into NEWS (TITLE, CONTENT, URL, CREATED_AT, MODIFIED_AT) VALUES ( ?,?,?,now(),now() )")) {
+                    statement.setString(1, title);
+                    statement.setString(2, content);
+                    statement.setString(3, link);
+                    statement.executeUpdate();
+                }
             }
         }
     }
@@ -123,10 +136,6 @@ public class Crawler {
 
     private static Document httpGetAndParseHtml(String link) throws IOException {
         CloseableHttpClient httpclient = HttpClients.createDefault();
-        if (link.startsWith("//")) {
-            link = "https:" + link;
-            System.out.println(link);
-        }
         HttpGet httpGet = new HttpGet(link);
         httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36");
         try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
