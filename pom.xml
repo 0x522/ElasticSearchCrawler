@@ -126,7 +126,6 @@
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <version>4.0.4</version>
                 <dependencies>
-                    <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
                     <dependency>
                         <groupId>com.github.spotbugs</groupId>
                         <artifactId>spotbugs</artifactId>
