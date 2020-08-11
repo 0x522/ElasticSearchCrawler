@@ -13,26 +13,20 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.stream.Collectors;
 
 public class Crawler {
-    public static final String USER_NAME = "root";
-    public static final String PASSWORD = "root";
 
-    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
-    public static void main(String[] args) throws IOException, SQLException {
-        //建立数据库链接
-        Connection connection = DriverManager.getConnection("jdbc:h2:file:/E:/Crawler/news", USER_NAME, PASSWORD);
+    CrawlerDao dao = new JdbcCrawlerDao();
+
+    public void run() throws SQLException, IOException {
+
         String link;
         //如果数据库里加载下一个链接，如果不是null就进行循环
-        while ((link = getNextLinkAndThenDelete(connection)) != null) {
+        while ((link = dao.getNextLinkAndThenDelete()) != null) {
             //查询数据库，如果链接被处理过了，就继续下一条链接
-            if (linkIsProcessed(connection, link)) {
+            if (dao.linkIsProcessed(link)) {
                 continue;
             }
             //链接没有被处理过
@@ -43,16 +37,22 @@ public class Crawler {
                 //解析url并拿到返回的页面DOM
                 Document document = httpGetAndParseHtml(link);
                 //把拿到的url插入数据库未处理的表中
-                putAllUrlsFromPageIntoDatabase(connection, document);
+                putAllUrlsFromPageIntoDatabase(document);
                 //如果是新闻链接，就存储到数据库
-                storeIntoDatabaseIfItIsNewsPage(connection, document, link);
+                storeIntoDatabaseIfItIsNewsPage(document, link);
                 //把已经处理过的链接插入数据库处理完成的表中
-                insertLinkIntoDatabase(connection, link, "insert into LINKS_ALREADY_PROCESSED (LINKS) values (?)");
+                dao.insertLinkIntoDatabase(link, "insert into LINKS_ALREADY_PROCESSED (LINKS) values (?)");
             }
         }
+
     }
 
-    private static void putAllUrlsFromPageIntoDatabase(Connection connection, Document document) throws SQLException {
+    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
+    public static void main(String[] args) throws SQLException, IOException {
+        new Crawler().run();
+    }
+
+    private void putAllUrlsFromPageIntoDatabase(Document document) throws SQLException {
         //遍历所有的a标签，并将其href属性添加到数据库中
         Elements links = document.select("a");
         for (Element aTag : links) {
@@ -63,72 +63,18 @@ public class Crawler {
             if (href.startsWith("//")) {
                 href = "https:" + href;
             }
-            insertLinkIntoDatabase(connection, href, "insert into LINKS_TO_BE_PROCESSED (LINKS) values (?)");
+            dao.insertLinkIntoDatabase(href, "insert into LINKS_TO_BE_PROCESSED (LINKS) values (?)");
         }
     }
 
-    private static void insertLinkIntoDatabase(Connection connection, String link, String sql) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, link);
-            statement.executeUpdate();
-        }
-    }
 
-    private static boolean linkIsProcessed(Connection connection, String link) throws SQLException {
-        ResultSet resultSet = null;
-        try (PreparedStatement statement = connection.prepareStatement("select LINKS from LINKS_ALREADY_PROCESSED where links = ?")) {
-            statement.setString(1, link);
-            resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                return true;
-            }
-        } finally {
-            if (resultSet != null) {
-                resultSet.close();
-            }
-        }
-        return false;
-    }
-
-    private static void deleteUrlsFromDatabase(Connection connection, String link) throws SQLException {
-        //从数据库里删除处理过的链接
-        try (PreparedStatement statement = connection.prepareStatement("delete from LINKS_TO_BE_PROCESSED where links = ?")) {
-            statement.setString(1, link);
-            statement.executeUpdate();
-        }
-    }
-
-    private static String getNextLink(Connection connection, String sql) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet resultSet = statement.executeQuery()) {
-            //执行查询并拿到link结果集
-            while (resultSet.next()) {
-                //获取第一列的link链接并加入链接池中
-                return resultSet.getString(1);
-            }
-        }
-        return null;
-    }
-
-    private static String getNextLinkAndThenDelete(Connection connection) throws SQLException {
-        String link = getNextLink(connection, "select links from LINKS_TO_BE_PROCESSED limit 1");
-        if (link != null) {
-            deleteUrlsFromDatabase(connection, link);
-        }
-        return link;
-    }
-
-    private static void storeIntoDatabaseIfItIsNewsPage(Connection connection, Document document, String link) throws SQLException {
+    private void storeIntoDatabaseIfItIsNewsPage(Document document, String link) throws SQLException {
         Elements articleTags = document.select("article");
         if (!articleTags.isEmpty()) {
             for (Element articleTag : articleTags) {
                 String title = articleTag.child(0).text();
                 String content = articleTag.select("p").stream().map(Element::text).collect(Collectors.joining("\n"));
-                try (PreparedStatement statement = connection.prepareStatement("insert into NEWS (TITLE, CONTENT, URL, CREATED_AT, MODIFIED_AT) VALUES ( ?,?,?,now(),now() )")) {
-                    statement.setString(1, title);
-                    statement.setString(2, content);
-                    statement.setString(3, link);
-                    statement.executeUpdate();
-                }
+                dao.insertNewsIntoDatabase(title, content, link);
             }
         }
     }
@@ -147,19 +93,19 @@ public class Crawler {
         }
     }
 
-    public static boolean isInterestingPage(String link) {
+    private static boolean isInterestingPage(String link) {
         return (isNewsPage(link) || isHomePage(link)) && isNotLoginPage(link);
     }
 
-    public static boolean isNewsPage(String link) {
+    private static boolean isNewsPage(String link) {
         return link.contains("news.sina.cn");
     }
 
-    public static boolean isNotLoginPage(String link) {
+    private static boolean isNotLoginPage(String link) {
         return !link.contains("passport.sina.cn");
     }
 
-    public static boolean isHomePage(String link) {
+    private static boolean isHomePage(String link) {
         return "https://sina.cn".equals(link);
     }
 }
