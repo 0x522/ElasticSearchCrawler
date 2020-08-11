@@ -2,6 +2,7 @@ package com.github.hcsp;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -14,6 +15,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
     private final Connection connection;
 
     @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
+
     public JdbcCrawlerDao() {
         //构造函数中建立数据库链接
         try {
