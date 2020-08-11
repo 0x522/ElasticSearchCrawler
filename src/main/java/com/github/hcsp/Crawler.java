@@ -21,6 +21,7 @@ public class Crawler {
     CrawlerDao dao = new MybatisCrawlerDao();
 //    CrawlerDao dao = new JdbcCrawlerDao();
 
+
     public void run() throws SQLException, IOException {
 
         String link;
@@ -50,6 +51,7 @@ public class Crawler {
     public static void main(String[] args) throws SQLException, IOException {
         new Crawler().run();
     }
+
 
     private void putAllUrlsFromPageIntoDatabase(Document document) throws SQLException {
         //遍历所有的a标签，并将其href属性添加到数据库中

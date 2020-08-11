@@ -38,6 +38,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
 
     public String getNextLinkAndThenDelete() throws SQLException {
         String link = getNextLink();
+
         if (link != null) {
             deleteUrlsFromDatabase(link);
         }
@@ -80,6 +81,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
             statement.setString(1, link);
             resultSet = statement.executeQuery();
             return resultSet.next();
+
         } finally {
             if (resultSet != null) {
                 resultSet.close();
