@@ -5,6 +5,13 @@ public class News {
     private Integer id;
     private String title;
     private String content;
+
+    public News(String title, String content, String url) {
+        this.title = title;
+        this.content = content;
+        this.url = url;
+    }
+
     private String url;
 
     public Integer getId() {

@@ -25,8 +25,8 @@ public class JdbcCrawlerDao implements CrawlerDao {
         }
     }
 
-    public String getNextLink(String sql) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet resultSet = statement.executeQuery()) {
+    private String getNextLink() throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("select links from LINKS_TO_BE_PROCESSED limit 1"); ResultSet resultSet = statement.executeQuery()) {
             //执行查询并拿到link结果集
             while (resultSet.next()) {
                 //获取第一列的link链接并加入链接池中
@@ -37,7 +37,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
     }
 
     public String getNextLinkAndThenDelete() throws SQLException {
-        String link = getNextLink("select links from LINKS_TO_BE_PROCESSED limit 1");
+        String link = getNextLink();
         if (link != null) {
             deleteUrlsFromDatabase(link);
         }
@@ -52,8 +52,15 @@ public class JdbcCrawlerDao implements CrawlerDao {
         }
     }
 
-    public void insertLinkIntoDatabase(String link, String sql) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+    public void insertProcessedLinkIntoDatabase(String link) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("insert into LINKS_ALREADY_PROCESSED (LINKS) values (? )")) {
+            statement.setString(1, link);
+            statement.executeUpdate();
+        }
+    }
+
+    public void insertToBeProcessedLinkIntoDatabase(String link) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("insert into LINKS_TO_BE_PROCESSED (LINKS) values (? )")) {
             statement.setString(1, link);
             statement.executeUpdate();
         }
@@ -68,7 +75,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
         }
     }
 
-    public boolean linkIsProcessed(String link) throws SQLException {
+    public boolean isLinkProcessed(String link) throws SQLException {
         ResultSet resultSet = null;
         try (PreparedStatement statement = connection.prepareStatement("select LINKS from LINKS_ALREADY_PROCESSED where links = ?")) {
             statement.setString(1, link);
@@ -76,11 +83,11 @@ public class JdbcCrawlerDao implements CrawlerDao {
             while (resultSet.next()) {
                 return true;
             }
+            return false;
         } finally {
             if (resultSet != null) {
                 resultSet.close();
             }
         }
-        return false;
     }
 }
