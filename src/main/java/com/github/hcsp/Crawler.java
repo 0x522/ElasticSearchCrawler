@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 
 public class Crawler {
 
+
     CrawlerDao dao = new MybatisCrawlerDao();
-//    CrawlerDao dao = new JdbcCrawlerDao();
 
     public void run() throws SQLException, IOException {
 
