@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 
 public class Crawler {
 
-    //    CrawlerDao dao = new MybatisCrawlerDao();
-    CrawlerDao dao = new JdbcCrawlerDao();
+
+      CrawlerDao dao = new MybatisCrawlerDao();
 
     public void run() throws SQLException, IOException {
 
@@ -27,7 +27,9 @@ public class Crawler {
         //如果数据库里加载下一个链接，如果不是null就进行循环
         while ((link = dao.getNextLinkAndThenDelete()) != null) {
             //查询数据库，如果链接被处理过了，就继续下一条链接
-            if (dao.isLinkProcessed(link)) {
+
+            if (dao.linkIsProcessed(link)) {
+
                 continue;
             }
             //链接没有被处理过
@@ -43,6 +45,7 @@ public class Crawler {
                 storeIntoDatabaseIfItIsNewsPage(document, link);
                 //把已经处理过的链接插入数据库处理完成的表中
                 dao.insertProcessedLinkIntoDatabase(link);
+
             }
         }
 

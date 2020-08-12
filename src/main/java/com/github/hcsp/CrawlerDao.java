@@ -3,6 +3,7 @@ package com.github.hcsp;
 import java.sql.SQLException;
 
 public interface CrawlerDao {
+
     String getNextLinkAndThenDelete() throws SQLException;
 
     void insertProcessedLinkIntoDatabase(String link) throws SQLException;

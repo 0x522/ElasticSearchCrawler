@@ -25,6 +25,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
 
     private String getNextLink() throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("select links from LINKS_TO_BE_PROCESSED limit 1"); ResultSet resultSet = statement.executeQuery()) {
+
             //执行查询并拿到link结果集
             while (resultSet.next()) {
                 //获取第一列的link链接并加入链接池中
@@ -50,6 +51,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
         }
     }
 
+
     public void insertProcessedLinkIntoDatabase(String link) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("insert into LINKS_ALREADY_PROCESSED (LINKS) values (? )")) {
             statement.setString(1, link);
@@ -72,6 +74,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
             statement.executeUpdate();
         }
     }
+
 
     public boolean isLinkProcessed(String link) throws SQLException {
         ResultSet resultSet = null;
