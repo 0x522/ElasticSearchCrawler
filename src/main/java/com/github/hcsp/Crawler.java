@@ -27,7 +27,6 @@ public class Crawler extends Thread {
     @Override
     public void run() {
         try {
-
             String link;
             //如果数据库里加载下一个链接，如果不是null就进行循环
             while ((link = dao.getNextLinkAndThenDelete()) != null) {
@@ -51,7 +50,6 @@ public class Crawler extends Thread {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private void putAllUrlsFromPageIntoDatabase(Document document) throws SQLException {
@@ -59,10 +57,10 @@ public class Crawler extends Thread {
         Elements links = document.select("a");
         for (Element aTag : links) {
             String href = aTag.attr("href");
+            if (href.startsWith("//")) {
+                href = "https:" + href;
+            }
             if (!href.toLowerCase().startsWith("javascript")) {
-                if (href.startsWith("//")) {
-                    href = "https:" + href;
-                }
                 dao.insertToBeProcessedLinkIntoDatabase(href);
             }
         }
@@ -84,7 +82,7 @@ public class Crawler extends Thread {
     private static Document httpGetAndParseHtml(String link) throws IOException {
         CloseableHttpClient httpclient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(link);
-        httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36");
+        httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36");
         try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
 //            System.out.println(response.getStatusLine());
             HttpEntity entity = response.getEntity();

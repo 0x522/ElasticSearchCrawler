@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MybatisCrawlerDao implements CrawlerDao {
-    SqlSessionFactory sqlSessionFactory;
+    private SqlSessionFactory sqlSessionFactory;
 
     public MybatisCrawlerDao() {
         try {
