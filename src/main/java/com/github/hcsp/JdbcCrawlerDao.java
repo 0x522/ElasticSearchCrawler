@@ -15,7 +15,6 @@ public class JdbcCrawlerDao implements CrawlerDao {
     private final Connection connection;
 
     @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
-
     public JdbcCrawlerDao() {
         //构造函数中建立数据库链接
         try {
@@ -38,7 +37,6 @@ public class JdbcCrawlerDao implements CrawlerDao {
 
     public String getNextLinkAndThenDelete() throws SQLException {
         String link = getNextLink();
-
         if (link != null) {
             deleteUrlsFromDatabase(link);
         }
@@ -75,13 +73,13 @@ public class JdbcCrawlerDao implements CrawlerDao {
         }
     }
 
+
     public boolean isLinkProcessed(String link) throws SQLException {
         ResultSet resultSet = null;
         try (PreparedStatement statement = connection.prepareStatement("select LINKS from LINKS_ALREADY_PROCESSED where LINKS = ?")) {
             statement.setString(1, link);
             resultSet = statement.executeQuery();
             return resultSet.next();
-
         } finally {
             if (resultSet != null) {
                 resultSet.close();
