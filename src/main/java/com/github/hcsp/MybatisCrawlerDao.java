@@ -12,7 +12,6 @@ import java.util.Map;
 
 public class MybatisCrawlerDao implements CrawlerDao {
     private SqlSessionFactory sqlSessionFactory;
-
     public MybatisCrawlerDao() {
         try {
             String resource = "db/Mybatis/config.xml";

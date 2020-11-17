@@ -2,6 +2,7 @@ package com.github.hcsp;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -24,7 +25,6 @@ public class JdbcCrawlerDao implements CrawlerDao {
     }
 
     private String getNextLink() throws SQLException {
-
         try (PreparedStatement statement = connection.prepareStatement("select LINKS from LINKS_TO_BE_PROCESSED limit 1"); ResultSet resultSet = statement.executeQuery()) {
 
             //执行查询并拿到link结果集
@@ -50,7 +50,6 @@ public class JdbcCrawlerDao implements CrawlerDao {
             statement.executeUpdate();
         }
     }
-
 
     public void insertProcessedLinkIntoDatabase(String link) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("insert into LINKS_ALREADY_PROCESSED (LINKS) values (? )")) {

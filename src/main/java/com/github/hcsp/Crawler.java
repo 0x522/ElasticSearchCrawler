@@ -1,5 +1,6 @@
 package com.github.hcsp;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -14,6 +15,7 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.stream.Collectors;
+
 
 public class Crawler extends Thread {
 

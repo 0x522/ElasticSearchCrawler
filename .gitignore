@@ -25,4 +25,5 @@ target/
 *.iml
 .idea/
 *.db
-data/
+/data
+

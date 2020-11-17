@@ -1,6 +1,7 @@
 package com.github.hcsp;
 
 
+
 import java.time.Instant;
 
 public class News {
