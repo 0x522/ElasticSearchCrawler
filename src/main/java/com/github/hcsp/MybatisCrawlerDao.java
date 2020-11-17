@@ -7,12 +7,11 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MybatisCrawlerDao implements CrawlerDao {
-    SqlSessionFactory sqlSessionFactory;
+    private SqlSessionFactory sqlSessionFactory;
 
     public MybatisCrawlerDao() {
         try {
@@ -25,7 +24,7 @@ public class MybatisCrawlerDao implements CrawlerDao {
     }
 
     @Override
-    public String getNextLinkAndThenDelete() throws SQLException {
+    public synchronized String getNextLinkAndThenDelete() {
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
             String url = session.selectOne("Crawler.selectNextAvailableLink");
             if (url != null) {
@@ -36,7 +35,7 @@ public class MybatisCrawlerDao implements CrawlerDao {
     }
 
     @Override
-    public void insertProcessedLinkIntoDatabase(String link) throws SQLException {
+    public void insertProcessedLinkIntoDatabase(String link) {
         Map<String, Object> map = new HashMap<>();
         map.put("tableName", "LINKS_ALREADY_PROCESSED");
         map.put("link", link);
@@ -47,7 +46,7 @@ public class MybatisCrawlerDao implements CrawlerDao {
     }
 
     @Override
-    public void insertToBeProcessedLinkIntoDatabase(String link) throws SQLException {
+    public void insertToBeProcessedLinkIntoDatabase(String link) {
         Map<String, Object> map = new HashMap<>();
         map.put("tableName", "LINKS_TO_BE_PROCESSED");
         map.put("link", link);
@@ -58,7 +57,7 @@ public class MybatisCrawlerDao implements CrawlerDao {
     }
 
     @Override
-    public void insertNewsIntoDatabase(String title, String content, String url) throws SQLException {
+    public void insertNewsIntoDatabase(String title, String content, String url) {
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
             session.insert("Crawler.insertNews", new News(title, content, url));
         }
@@ -66,7 +65,7 @@ public class MybatisCrawlerDao implements CrawlerDao {
     }
 
     @Override
-    public boolean isLinkProcessed(String link) throws SQLException {
+    public boolean isLinkProcessed(String link) {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             int count = session.selectOne("Crawler.selectLinkCount", link);
             return count != 0;
