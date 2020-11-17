@@ -26,6 +26,7 @@ public class JdbcCrawlerDao implements CrawlerDao {
 
     private String getNextLink() throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("select LINKS from LINKS_TO_BE_PROCESSED limit 1"); ResultSet resultSet = statement.executeQuery()) {
+
             //执行查询并拿到link结果集
             while (resultSet.next()) {
                 //获取第一列的link链接并加入链接池中
